@@ -28,10 +28,18 @@ public class RealTimeService : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            foreach (var homeObserver in observers)
+            try
             {
-                await homeObserver.StartIfNeeded(stoppingToken);
+                foreach (var homeObserver in observers)
+                {
+                    await homeObserver.StartIfNeeded(stoppingToken);
+                }
             }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Threw exception when trying to start home observers.");
+            }
+            
             await Task.Delay(5000, stoppingToken);
         }
     }
@@ -70,12 +78,15 @@ public class HomeObserver : IObserver<RealTimeMeasurement>
         Console.WriteLine($"{value.Timestamp}: {value.Power}");
     }
 
+
+    private IObservable<RealTimeMeasurement>? _listener = null;
+
     public async Task StartIfNeeded(CancellationToken stopToken)
     {
         if (!_running)
         {
-            var listener = await _tibberClient.StartListener(this._home.Id.Value, stopToken);
-            listener.Subscribe(this);
+            _listener = await _tibberClient.StartListener(this._home.Id.Value, stopToken);
+            _listener.Subscribe(this);
             _running = true;
         }
     }
