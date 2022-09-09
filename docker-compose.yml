@@ -1,0 +1,13 @@
+version: "3.7"
+
+services:
+  tibber:
+    restart: always
+    container_name: tibber
+    image: foo:1.0
+    environment:
+      - Tibber:UserAgent=bitbucket
+      - Tibber:Key=<your key>
+      - Influx:HttpHost=http://influxserver:8086
+      - Influx:ApiToken=influxapitoken
+      - Influx:Organization=influxorganization
