@@ -74,7 +74,7 @@ public class HomeObserver : IObserver<RealTimeMeasurement>
     public void OnNext(RealTimeMeasurement value)
     {
         var m = PowerMeasurement.Create(value, _home.AppNickname);
-        _influxWriter.Write<PowerMeasurement>(m, "bitbucket").Wait();
+        _influxWriter.Write(m, "bitbucket").Wait();
         Console.WriteLine($"{value.Timestamp}: {value.Power}");
     }
 

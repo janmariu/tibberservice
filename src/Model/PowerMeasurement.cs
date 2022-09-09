@@ -16,7 +16,7 @@ public class PowerMeasurement
     [Column("AveragePower")]public decimal AveragePower { get; set; }
     [Column("MaxPower")]public decimal MaxPower { get; set; }
     [Column("SignalStrength")] public int? SignalStrength { get; set; }
-    [Column("Installation", IsTag = true)] public string HomeName { get; set; }
+    [Column("Installation", IsTag = true)] public string HomeName { get; set; } = string.Empty;
     
     public static PowerMeasurement Create(RealTimeMeasurement value, string homeName)
     {
