@@ -8,33 +8,33 @@ namespace tibberservice.Infrastructure;
 
 public class InfluxWriter
 {
+    private readonly ILogger<InfluxWriter> _logger;
     private readonly InfluxConfig _configuration;
     private readonly InfluxDBClient _client;
     
-    public InfluxWriter(IOptions<InfluxConfig> configuration)
+    public InfluxWriter(ILogger<InfluxWriter> logger, IOptions<InfluxConfig> configuration)
     {
+        _logger = logger;
         _configuration = configuration.Value;
         _client = InfluxDBClientFactory.Create(
             _configuration.HttpHost,
             _configuration.ApiToken);
     }
 
-    public Task Write<T>(T measurement, string bucketName)
+    public async Task Write<T>(T measurement, string bucketName)
     {
-        var writeApi = _client.GetWriteApiAsync();
-        return writeApi.WriteMeasurementAsync(
-            measurement,
-            WritePrecision.S,
-            bucketName,
-            _configuration.Organization);
-    }
-
-    public Task Write<T>(List<T> measurements, string bucketName)
-    {
-        var writeApi = _client.GetWriteApiAsync();
-        return writeApi.WriteMeasurementsAsync(measurements,
-            WritePrecision.S,
-            bucketName,
-            _configuration.Organization);
+        try
+        {
+            var writeApi = _client.GetWriteApiAsync();
+            await writeApi.WriteMeasurementAsync(
+                measurement,
+                WritePrecision.S,
+                bucketName,
+                _configuration.Organization);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to write to influx");
+        }
     }
 }
