@@ -2,8 +2,6 @@ using Tibber.Sdk;
 using tibberservice.Infrastructure;
 using tibberservice.Model;
 
-namespace tibberservice;
-
 public class HomeObserver : IObserver<RealTimeMeasurement>
 {
     private readonly Home _home;
@@ -37,12 +35,15 @@ public class HomeObserver : IObserver<RealTimeMeasurement>
         Console.WriteLine($"{value.Timestamp}: {value.Power}");
     }
 
+
+    private IObservable<RealTimeMeasurement>? _listener = null;
+
     public async Task StartIfNeeded(CancellationToken stopToken)
     {
         if (!_running)
         {
-            var listener = await _tibberClient.StartListener(_home.Id!.Value, stopToken);
-            listener.Subscribe(this);
+            _listener = await _tibberClient.StartListener(this._home.Id!.Value, stopToken);
+            _listener.Subscribe(this);
             _running = true;
         }
     }
