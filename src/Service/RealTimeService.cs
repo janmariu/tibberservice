@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Tibber.Sdk;
 using tibberservice.Infrastructure;
 using tibberservice.Model;
