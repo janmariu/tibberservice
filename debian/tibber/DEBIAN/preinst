@@ -1,3 +1,8 @@
 #!/bin/bash
 systemctl stop tibber.service || true
 systemctl disable tibber.service || true
+
+cd /opt/tibber
+if [ -f "appsettings.json" ]; then
+  cp appsettings.json appsettings.user
+fi
