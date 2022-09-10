@@ -1,0 +1,3 @@
+#!/bin/bash
+systemctl stop tibber.service || true
+systemctl disable tibber.service || true

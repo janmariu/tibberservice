@@ -1,0 +1,10 @@
+[Unit]
+Description=Tibber service
+
+[Service]
+Type=notify
+ExecStart=/opt/tibber/tibberservice
+WorkingDirectory=/opt/tibber
+
+[Install]
+WantedBy=multi-user.target

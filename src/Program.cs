@@ -1,8 +1,9 @@
+using System.Runtime.InteropServices;
 using tibberservice;
 using tibberservice.Infrastructure;
 using tibberservice.Model;
 
-IHost host = Host.CreateDefaultBuilder(args)
+var builder = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
         services.AddTransient<TibberClient>();
@@ -11,7 +12,11 @@ IHost host = Host.CreateDefaultBuilder(args)
 
         services.AddHostedService<RealTimeService>();
         services.AddTransient<InfluxWriter>();
-    })
-    .Build();
+    });
 
-await host.RunAsync();
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+{
+    builder.UseSystemd();
+}
+
+await builder.Build().RunAsync();
