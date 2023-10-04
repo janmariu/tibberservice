@@ -1,6 +1,5 @@
 using InfluxDB.Client;
 using InfluxDB.Client.Api.Domain;
-using InfluxDB.Client.Writes;
 using Microsoft.Extensions.Options;
 using tibberservice.Model;
 

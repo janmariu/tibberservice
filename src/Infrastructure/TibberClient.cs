@@ -22,7 +22,7 @@ public class TibberClient
     
     public async Task<IEnumerable<Home>> GetRealTimeConsumptionHomes()
     {
-        var apiClient = new TibberApiClient(_config.Key, _config.GetHeader());
+        using var apiClient = new TibberApiClient(_config.Key, _config.GetHeader());
         var basicData = await apiClient.GetBasicData();
         return basicData
             .Data

@@ -7,7 +7,8 @@ public class HomeObserver : IObserver<RealTimeMeasurement>
     private readonly Home _home;
     private readonly TibberClient _tibberClient;
     private readonly InfluxWriter _influxWriter;
-    private bool _running = false;
+    private bool _running;
+    
     public HomeObserver(
         Home home,
         TibberClient tibberClient,
@@ -21,11 +22,13 @@ public class HomeObserver : IObserver<RealTimeMeasurement>
     public void OnCompleted()
     {
         _running = false;
+        _subscription?.Dispose();
     }
 
     public void OnError(Exception error)
     {
         _running = false;
+        _subscription?.Dispose();
     }
 
     public void OnNext(RealTimeMeasurement value)
@@ -35,15 +38,15 @@ public class HomeObserver : IObserver<RealTimeMeasurement>
         Console.WriteLine($"{value.Timestamp}: {value.Power}");
     }
 
-
     private IObservable<RealTimeMeasurement>? _listener = null;
-
+    private IDisposable? _subscription = null;
+    
     public async Task StartIfNeeded(CancellationToken stopToken)
     {
         if (!_running)
         {
-            _listener = await _tibberClient.StartListener(this._home.Id!.Value, stopToken);
-            _listener.Subscribe(this);
+            _listener = await _tibberClient.StartListener(_home.Id!.Value, stopToken);
+            _subscription = _listener.Subscribe(this);
             _running = true;
         }
     }

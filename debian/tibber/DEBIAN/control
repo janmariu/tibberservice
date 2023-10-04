@@ -1,5 +1,5 @@
 Package: tibber
-Version: 0.1
+Version: 0.2
 Maintainer: Jan Marius
 Architecture: amd64
 Description: A service writing data from the tibber API to influx.

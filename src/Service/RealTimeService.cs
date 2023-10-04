@@ -1,6 +1,4 @@
-using Tibber.Sdk;
 using tibberservice.Infrastructure;
-using tibberservice.Model;
 
 namespace tibberservice;
 
@@ -23,7 +21,8 @@ public class RealTimeService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var homes = await _tibberClient.GetRealTimeConsumptionHomes();
-        var observers = homes.Select(home => new HomeObserver(home, _tibberClient, _influxWriter)).ToList();
+        var observers = homes.Select(
+            home => new HomeObserver(home, _tibberClient, _influxWriter)).ToList();
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -39,7 +38,7 @@ public class RealTimeService : BackgroundService
                 _logger.LogError(e, "Threw exception when trying to start home observers.");
             }
             
-            await Task.Delay(5000, stoppingToken);
+            await Task.Delay(30000, stoppingToken);
         }
     }
 }
