@@ -34,7 +34,7 @@ public class HomeObserver : IObserver<RealTimeMeasurement>
     public void OnNext(RealTimeMeasurement value)
     {
         var m = PowerMeasurement.Create(value, _home.AppNickname);
-        _influxWriter.Write(m, "bitbucket").Wait();
+        _influxWriter.Write(m, "bitbucket");
         Console.WriteLine($"{value.Timestamp}: {value.Power}");
     }
 
@@ -43,11 +43,20 @@ public class HomeObserver : IObserver<RealTimeMeasurement>
     
     public async Task StartIfNeeded(CancellationToken stopToken)
     {
-        if (!_running)
+        if (_running)
+        {
+            return;
+        }
+
+        try
         {
             _listener = await _tibberClient.StartListener(_home.Id!.Value, stopToken);
             _subscription = _listener.Subscribe(this);
             _running = true;
+        }
+        catch(Exception e)
+        {
+            Console.Error.WriteLine($"Failed StartIfNeeded(): {e}");            
         }
     }
 }

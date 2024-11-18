@@ -10,7 +10,7 @@ public class InfluxWriter
     private readonly ILogger<InfluxWriter> _logger;
     private readonly InfluxConfig _configuration;
     private readonly InfluxDBClient _client;
-    
+
     public InfluxWriter(ILogger<InfluxWriter> logger, IOptions<InfluxConfig> configuration)
     {
         _logger = logger;
@@ -20,12 +20,12 @@ public class InfluxWriter
             _configuration.ApiToken);
     }
 
-    public async Task Write<T>(T measurement, string bucketName)
+    public void Write<T>(T measurement, string bucketName)
     {
         try
         {
-            var writeApi = _client.GetWriteApiAsync();
-            await writeApi.WriteMeasurementAsync(
+            var writeApi = _client.GetWriteApi();
+            writeApi.WriteMeasurement(
                 measurement,
                 WritePrecision.S,
                 bucketName,
