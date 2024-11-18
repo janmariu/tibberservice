@@ -26,16 +26,9 @@ public class RealTimeService : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            try
+            foreach (var homeObserver in observers)
             {
-                foreach (var homeObserver in observers)
-                {
-                    await homeObserver.StartIfNeeded(stoppingToken);
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Threw exception when trying to start home observers.");
+                await homeObserver.StartIfNeeded(stoppingToken);
             }
             
             await Task.Delay(30000, stoppingToken);

@@ -48,15 +48,8 @@ public class HomeObserver : IObserver<RealTimeMeasurement>
             return;
         }
 
-        try
-        {
-            _listener = await _tibberClient.StartListener(_home.Id!.Value, stopToken);
-            _subscription = _listener.Subscribe(this);
-            _running = true;
-        }
-        catch(Exception e)
-        {
-            Console.Error.WriteLine($"Failed StartIfNeeded(): {e}");            
-        }
+        _listener = await _tibberClient.StartListener(_home.Id!.Value, stopToken);
+        _subscription = _listener.Subscribe(this);
+        _running = true;
     }
 }
