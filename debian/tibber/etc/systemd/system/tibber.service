@@ -5,6 +5,8 @@ Description=Tibber service
 Type=notify
 ExecStart=/opt/tibber/tibberservice
 WorkingDirectory=/opt/tibber
+Restart=on-failure
+RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target
