@@ -7,16 +7,19 @@ public class HomeObserver : IObserver<RealTimeMeasurement>
     private readonly Home _home;
     private readonly TibberClient _tibberClient;
     private readonly InfluxWriter _influxWriter;
+    private readonly PostgresWriter _postgresWriter;
     private bool _running;
     
     public HomeObserver(
         Home home,
         TibberClient tibberClient,
-        InfluxWriter influxWriter)
+        InfluxWriter influxWriter,
+        PostgresWriter postgresWriter)
     {
         _home = home;
         _tibberClient = tibberClient;
         _influxWriter = influxWriter;
+        _postgresWriter = postgresWriter;
     }
     
     public void OnCompleted()
@@ -35,6 +38,7 @@ public class HomeObserver : IObserver<RealTimeMeasurement>
     {
         var m = PowerMeasurement.Create(value, _home.AppNickname);
         _influxWriter.Write(m, "bitbucket");
+        _postgresWriter.Write(m);
         Console.WriteLine($"{value.Timestamp}: {value.Power}");
     }
 

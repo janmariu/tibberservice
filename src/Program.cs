@@ -7,11 +7,14 @@ var builder = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
         services.AddTransient<TibberClient>();
+        services.Configure<PostgresConfig>(context.Configuration.GetSection("Postgres"));
         services.Configure<TibberConfig>(context.Configuration.GetSection("Tibber"));
         services.Configure<InfluxConfig>(context.Configuration.GetSection("Influx"));
-
+        
+        
         services.AddHostedService<RealTimeService>();
         services.AddTransient<InfluxWriter>();
+        services.AddTransient<PostgresWriter>();
     });
 
 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
