@@ -1,4 +1,6 @@
 using tibberservice.Infrastructure;
+using System.Threading.Channels;
+using tibberservice.Model;
 
 namespace tibberservice;
 
@@ -6,19 +8,16 @@ public class RealTimeService : BackgroundService
 {
     private readonly ILogger<RealTimeService> _logger;
     private readonly TibberClient _tibberClient;
-    private readonly InfluxWriter _influxWriter;
-    private readonly PostgresWriter _postgresWriter;
+    private readonly ChannelWriter<PowerMeasurement> _channelWriter;
 
     public RealTimeService(
         ILogger<RealTimeService> logger, 
         TibberClient tibberClient,
-        InfluxWriter influxWriter,
-        PostgresWriter postgresWriter)
+        ChannelWriter<PowerMeasurement> channelWriter)
     {
         _logger = logger;
         _tibberClient = tibberClient;
-        _influxWriter = influxWriter;
-        _postgresWriter = postgresWriter;
+        _channelWriter = channelWriter;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -27,7 +26,7 @@ public class RealTimeService : BackgroundService
         {
             var homes = await _tibberClient.GetRealTimeConsumptionHomes();
             var observers = homes.Select(
-                home => new HomeObserver(home, _tibberClient, _influxWriter, _postgresWriter)).ToList();
+                home => new HomeObserver(home, _tibberClient, _channelWriter)).ToList();
 
             while (!stoppingToken.IsCancellationRequested)
             {

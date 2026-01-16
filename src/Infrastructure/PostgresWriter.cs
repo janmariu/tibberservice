@@ -6,7 +6,7 @@ namespace tibberservice.Infrastructure;
 
 public class PostgresConfig
 {
-    public string ConnectionString { get; set; }
+    public string ConnectionString { get; set; } = string.Empty;
 }
 
 public class PostgresWriter
@@ -19,7 +19,7 @@ public class PostgresWriter
         _logger = logger;
         if (configuration.Value == null)
         {
-            _logger.LogError("Missing \"Postgres\" { \"ConnectionString\": ... } in appsettings.json");
+            _logger.LogError("Missing Postgres configuration with ConnectionString in appsettings.json");
             return;
         }
 
@@ -65,8 +65,8 @@ public class PostgresWriter
             cmd.Parameters.AddWithValue("AccumulatedConsumption", measurement.AccumulatedConsumption);
             cmd.Parameters.AddWithValue("AccumulatedConsumptionLastHour", measurement.AccumulatedConsumptionLastHour);
             cmd.Parameters.AddWithValue("Power", measurement.Power);
-            cmd.Parameters.AddWithValue("LastMeterConsumption", measurement.LastMeterConsumption);
-            cmd.Parameters.AddWithValue("AccumulatedCost", measurement.AccumulatedCost);
+            cmd.Parameters.AddWithValue("LastMeterConsumption", measurement.LastMeterConsumption ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("AccumulatedCost", measurement.AccumulatedCost ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("MinPower", measurement.MinPower);
             cmd.Parameters.AddWithValue("AveragePower", measurement.AveragePower);
             cmd.Parameters.AddWithValue("MaxPower", measurement.MaxPower);

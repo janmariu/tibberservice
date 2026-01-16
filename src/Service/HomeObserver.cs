@@ -1,25 +1,23 @@
 using Tibber.Sdk;
 using tibberservice.Infrastructure;
 using tibberservice.Model;
+using System.Threading.Channels;
 
 public class HomeObserver : IObserver<RealTimeMeasurement>
 {
     private readonly Home _home;
     private readonly TibberClient _tibberClient;
-    private readonly InfluxWriter _influxWriter;
-    private readonly PostgresWriter _postgresWriter;
+    private readonly ChannelWriter<PowerMeasurement> _channelWriter;
     private bool _running;
     
     public HomeObserver(
         Home home,
         TibberClient tibberClient,
-        InfluxWriter influxWriter,
-        PostgresWriter postgresWriter)
+        ChannelWriter<PowerMeasurement> channelWriter)
     {
         _home = home;
         _tibberClient = tibberClient;
-        _influxWriter = influxWriter;
-        _postgresWriter = postgresWriter;
+        _channelWriter = channelWriter;
     }
     
     public void OnCompleted()
@@ -37,8 +35,8 @@ public class HomeObserver : IObserver<RealTimeMeasurement>
     public void OnNext(RealTimeMeasurement value)
     {
         var m = PowerMeasurement.Create(value, _home.AppNickname);
-        _influxWriter.Write(m, "bitbucket");
-        _postgresWriter.Write(m);
+        // Background writer service will pick up queued measurements.
+        _channelWriter.TryWrite(m);
         Console.WriteLine($"{value.Timestamp}: {value.Power}");
     }
 
