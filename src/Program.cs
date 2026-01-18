@@ -1,32 +1,38 @@
 using System.Runtime.InteropServices;
-using System.Threading.Channels;
 using tibberservice;
 using tibberservice.Infrastructure;
 using tibberservice.Model;
-using tibberservice.Service;
 
-var builder = Host.CreateDefaultBuilder(args)
-    .ConfigureServices((context, services) =>
-    {
-        services.AddTransient<TibberClient>();
-        services.Configure<PostgresConfig>(context.Configuration.GetSection("Postgres"));
-        services.Configure<TibberConfig>(context.Configuration.GetSection("Tibber"));
-        services.Configure<InfluxConfig>(context.Configuration.GetSection("Influx"));
-        
-        var measurementChannel = Channel.CreateUnbounded<PowerMeasurement>();
-        services.AddSingleton(measurementChannel);
-        services.AddSingleton(measurementChannel.Writer);
-        services.AddSingleton(measurementChannel.Reader);
-        
-        services.AddTransient<InfluxWriter>();
-        services.AddTransient<PostgresWriter>();
-        services.AddHostedService<RealTimeService>();
-        services.AddHostedService<MeasurementWriteService>();
-    });
+var builder = Host.CreateDefaultBuilder(args);
 
-if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+var runningOnSystemd = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+
+if (runningOnSystemd)
 {
     builder.UseSystemd();
 }
+else
+{
+    builder.ConfigureLogging(logging =>
+    {
+        logging.AddSimpleConsole(options =>
+        {
+            options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
+            options.SingleLine = true;
+        });
+    });
+}
+
+builder.ConfigureServices((context, services) =>
+{
+    services.AddTransient<TibberClient>();
+    services.Configure<PostgresConfig>(context.Configuration.GetSection("Postgres"));
+    services.Configure<TibberConfig>(context.Configuration.GetSection("Tibber"));
+    services.Configure<InfluxConfig>(context.Configuration.GetSection("Influx"));
+    
+    services.AddTransient<InfluxWriter>();
+    services.AddTransient<PostgresWriter>();
+    services.AddHostedService<RealTimeService>();
+});
 
 await builder.Build().RunAsync();

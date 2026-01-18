@@ -1,5 +1,5 @@
-using tibberservice.Infrastructure;
 using System.Threading.Channels;
+using tibberservice.Infrastructure;
 using tibberservice.Model;
 
 namespace tibberservice;
@@ -8,16 +8,22 @@ public class RealTimeService : BackgroundService
 {
     private readonly ILogger<RealTimeService> _logger;
     private readonly TibberClient _tibberClient;
-    private readonly ChannelWriter<PowerMeasurement> _channelWriter;
+    private readonly InfluxWriter _influxWriter;
+    private readonly PostgresWriter _postgresWriter;
+    private readonly Channel<PowerMeasurement> _channel;
+    private long _writtenCount;
 
     public RealTimeService(
         ILogger<RealTimeService> logger, 
         TibberClient tibberClient,
-        ChannelWriter<PowerMeasurement> channelWriter)
+        InfluxWriter influxWriter,
+        PostgresWriter postgresWriter)
     {
         _logger = logger;
         _tibberClient = tibberClient;
-        _channelWriter = channelWriter;
+        _influxWriter = influxWriter;
+        _postgresWriter = postgresWriter;
+        _channel = Channel.CreateUnbounded<PowerMeasurement>();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -25,23 +31,64 @@ public class RealTimeService : BackgroundService
         try
         {
             var homes = await _tibberClient.GetRealTimeConsumptionHomes();
-            var observers = homes.Select(
-                home => new HomeObserver(home, _tibberClient, _channelWriter)).ToList();
 
-            while (!stoppingToken.IsCancellationRequested)
+            foreach (var home in homes)
             {
-                foreach (var homeObserver in observers)
-                {
-                    await homeObserver.StartIfNeeded(stoppingToken);
-                }
-            
-                await Task.Delay(30000, stoppingToken);
-            }
+                var sub = await _tibberClient.StartListener(home.Id!.Value, stoppingToken);
+                sub.Subscribe(
+                    onNext: value => {
+                        var data = PowerMeasurement.Create(value, home.AppNickname);
+                        if (!_channel.Writer.TryWrite(data))
+                        {
+                            _logger.LogWarning("Dropping measurements for {HomeId} at {Timestamp}", home.Id, value.Timestamp);
+                        }
+                    },
+                    onError: ex => _logger.LogError(ex, "stream error"),
+                    onCompleted: () => _logger.LogInformation("stream completed")
+                );
+            }            
+
+            var processingTask = ProcessMeasurements(stoppingToken);
+            var monitorTask = MonitorStats(stoppingToken);
+
+            await Task.WhenAll(processingTask, monitorTask);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex.Message);
             Environment.Exit(1);
+        }
+    }
+
+    private async Task ProcessMeasurements(CancellationToken stoppingToken)
+    {
+        await foreach (var measurement in _channel.Reader.ReadAllAsync(stoppingToken))
+        {
+            try
+            {
+                _influxWriter.Write(measurement, "bitbucket");
+                _postgresWriter.Write(measurement);
+                Interlocked.Increment(ref _writtenCount);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to persist measurement for {Home}", measurement.HomeName);
+            }
+        }
+    }
+
+    private async Task MonitorStats(CancellationToken stoppingToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
+        while (await timer.WaitForNextTickAsync(stoppingToken))
+        {
+            var count = Interlocked.Exchange(ref _writtenCount, 0);
+            _logger.LogInformation("Measurements written in the last minute: {Count}", count);
+            if (count == 0)
+            {
+                _logger.LogInformation("No readings received for 1 minute. Hard existing to let systemd restart.");
+                Environment.Exit(2);
+            }
         }
     }
 }
