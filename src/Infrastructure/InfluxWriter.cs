@@ -15,9 +15,7 @@ public class InfluxWriter
     {
         _logger = logger;
         _configuration = configuration.Value;
-        _client = InfluxDBClientFactory.Create(
-            _configuration.HttpHost,
-            _configuration.ApiToken);
+        _client = new InfluxDBClient(_configuration.HttpHost, _configuration.ApiToken);
     }
 
     public void Write<T>(T measurement, string bucketName)

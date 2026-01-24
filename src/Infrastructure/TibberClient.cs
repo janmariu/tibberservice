@@ -17,7 +17,7 @@ public class TibberClient
     public async Task<IObservable<RealTimeMeasurement>> StartListener(Guid homeId, CancellationToken stopToken)
     {
         var apiClient = new TibberApiClient(_config.Key, _config.GetHeader());
-        return await apiClient.StartRealTimeMeasurementListener(homeId, stopToken);
+        return await apiClient.StartRealTimeMeasurementListener(homeId, null, stopToken);
     }
     
     public async Task<IEnumerable<Home>> GetRealTimeConsumptionHomes()
