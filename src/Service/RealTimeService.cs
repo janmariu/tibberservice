@@ -10,6 +10,7 @@ public class RealTimeService : BackgroundService
     private readonly TibberClient _tibberClient;
     private readonly InfluxWriter _influxWriter;
     private readonly PostgresWriter _postgresWriter;
+    private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly Channel<PowerMeasurement> _channel;
     private long _writtenCount;
 
@@ -17,12 +18,14 @@ public class RealTimeService : BackgroundService
         ILogger<RealTimeService> logger, 
         TibberClient tibberClient,
         InfluxWriter influxWriter,
-        PostgresWriter postgresWriter)
+        PostgresWriter postgresWriter,
+        IHostApplicationLifetime applicationLifetime)
     {
         _logger = logger;
         _tibberClient = tibberClient;
         _influxWriter = influxWriter;
         _postgresWriter = postgresWriter;
+        _applicationLifetime = applicationLifetime;
         _channel = Channel.CreateUnbounded<PowerMeasurement>();
     }
 
@@ -55,8 +58,9 @@ public class RealTimeService : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex.Message);
-            Environment.Exit(1);
+            _logger.LogError(ex, "Unhandled exception in ExecuteAsync");
+            Environment.ExitCode = 1;
+            throw;
         }
     }
 
@@ -73,6 +77,8 @@ public class RealTimeService : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to persist measurement for {Home}", measurement.HomeName);
+                Environment.ExitCode = 1;
+                _applicationLifetime.StopApplication();
             }
         }
     }
@@ -86,8 +92,9 @@ public class RealTimeService : BackgroundService
             _logger.LogInformation("Measurements written in the last minute: {Count}", count);
             if (count == 0)
             {
-                _logger.LogInformation("No readings received for 1 minute. Hard existing to let systemd restart.");
-                Environment.Exit(2);
+                _logger.LogInformation("No readings received for 1 minute. Exiting to let systemd restart.");
+                Environment.ExitCode = 1;
+                _applicationLifetime.StopApplication();
             }
         }
     }
